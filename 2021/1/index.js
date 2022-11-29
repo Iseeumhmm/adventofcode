@@ -11,18 +11,18 @@ numbersArr.forEach( (each, i) => {
 });
 
 // Result 1
-console.log(increased)
+console.log(increased);
 
 increased = 0;
 
 /** Part 2 */
 numbersArr.forEach( (_, numIndex) => {
-    const windows = [0,1].map((windowIndex)=> {
+    const windows = [0,1].map( (windowIndex)=> {
         let window = 0;
         for ( let n = 0; n < 3; n++ ) {
             window += numbersArr[ numIndex + n + windowIndex];
         }
-        return window
+        return window;
     });
     if (!isNaN(windows[1])) {
         increased += windows[0] < windows[1] ? 1 : 0;
@@ -31,4 +31,4 @@ numbersArr.forEach( (_, numIndex) => {
 });
 
 // Result 2
-console.log(increased)
+console.log(increased);
