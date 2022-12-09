@@ -1,46 +1,58 @@
 const fs = require('fs');
-const consoleInputs = fs.readFileSync('input.txt').toString().split("\n").map(e=>e.replace(/(\$|\s)/g,'','')).map(e=>e.match(/[0-9]+/g)?e.match(/[0-9]+/g)[0]:e)
+const file = fs.readFileSync('input.txt').toString().split("\n")
 
-let totals = []
-let path = []
-consoleInputs.forEach( item => {
-    if (item.match(/cd+/g)) {
-         if (item.match(/\.\.+/g)) {
-            path.pop()
-         } else {
-            path.push(item)
-         }
-    } else if (!item.match(/(ls|dir)+/g)) {
-       path.forEach(each=>totals.push([each,Number(item)]))
+let dirs = {"/":{ parent: "", files: [], dirs: [] }}
+let currentDir = ""
+
+const isRoot = dir => dir === "/" ? dir : dir + "/"
+
+file.forEach(line => {
+    let cmd = line.split(" ")
+    if (line.startsWith("$")) {
+        if (cmd[1] === "cd") {
+            if (cmd[2] === "/"){
+                currentDir = "/"
+            }
+            else if(cmd[2] === ".."){
+                let paths = currentDir.split("/")
+                currentDir = paths.slice(0, paths.length - 1).join('/');
+            } else {
+                currentDir = isRoot(currentDir) + cmd[2]
+            }
+        }
+    } else {
+        if (cmd[0] == 'dir') {
+            let newDir = isRoot(currentDir) + cmd[1];
+            dirs[newDir] = {
+                parent: currentDir,
+                files: [],
+                dirs: []
+            }
+            dirs[currentDir].dirs.push(newDir)
+        } else {
+            dirs[currentDir].files.push({file: cmd[1], size: parseInt(cmd[0])})
+        }
     }
 })
 
-let keysUsed = []
-let dirFiles = []
-totals.forEach(total=>{
-    let key = total[0]
-    if (!keysUsed.some(k=>k===key)) {
-        keysUsed.push(key)
-        dirFiles.push(totals.filter((tot=>tot[0]===key)))
-    }
-})
-
-let tots = []
-const directoryTotals = (dir) => {
-    key = dir[0][0]
-    t = dir.map(e=>e[1]).reduce((a,b)=>a+b)
-    console.log ({[key]: t})
-    tots.push(t)
+let calcTotalSize = dir => {
+    return dirs[dir].files.reduce((tot, file) => tot + file.size, 0) +
+            dirs[dir].dirs.reduce((tot, child) => tot + calcTotalSize(child), 0);
 }
 
-console.log("Directory Files: \n")
-console.log(dirFiles)
+let partOneTotal = Object.keys(dirs).reduce((tot, key) => {
+    let total = calcTotalSize(key);
+    if (total <= 100000) tot += total;
+    return tot;
+}, 0)
 
-console.log("\Directory Totals: \n")
-dirFiles.forEach(e=>directoryTotals(e))
+let allDirSizes = Object.keys(dirs).map( d => {
+    return calcTotalSize(d)
+})
 
-console.log("\nTotal: ",tots.filter(t=>t<=100000).reduce((a,b)=>a+b))
+let spaceNeeded = 30000000 - (70000000 - calcTotalSize('/'));
 
+let sortedSizes = allDirSizes.sort((a,b)=>a+b).filter((a,b)=>a>spaceNeeded)
 
-
-
+console.log("Sum of directories under 100000", partOneTotal)
+console.log("Dir to delete to make space for update: ", Math.min(...sortedSizes))
